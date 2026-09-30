@@ -216,3 +216,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project secrets and runtime files
+.env
+credentials/
+logs/
+screenshots/
