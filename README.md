@@ -13,20 +13,28 @@
 
 ---
 
+<h1 align="center">Stop Sales Semi-Automation Bot 🛑🤖</h1>
+
+<p align="center">
+  <em>A lightweight RPA workflow that turns Google Sheets into a control panel for Colinker allotment &amp; Stop Sale operations.</em>
+</p>
+
 ## 📖 Project Overview
 
-Dự án triển khai quy trình **Bán Tự Động (Semi-Automation)** để xử lý yêu cầu Stop Sales trên **Colinker Admin**. Nhân sự chuẩn hóa dữ liệu đầu vào trên **Google Sheets**; khi có yêu cầu cần xử lý, script **Python** dùng **gspread** đọc Sheet và **Playwright** thao tác trình duyệt để cập nhật trạng thái phòng cho khách sạn. Đây là giải pháp **quick-win**: chi phí thấp, triển khai nhanh (2–3 tuần), phù hợp trước khi hệ thống có API chính thức.
+This project implements a **Semi-Automation** workflow to process Stop Sales requests on **Colinker Admin**. The team standardizes request data on **Google Sheets**; when a request needs processing, a **Python** script reads the Sheet with **gspread** and uses **Playwright** to operate the browser and update room status for the hotel. It is a **quick-win** solution: low cost, fast to deploy (2–3 weeks), and usable before the system provides an official API.
 
 ## 🔑 Key Features
 
-- **Chuẩn hóa dữ liệu đầu vào**: Nhập yêu cầu vào Google Sheets theo cột cố định (`Hotel ID`, `Room Type`, `Start Date`, `End Date`, `Status`).
-- **Con người kiểm soát thời điểm chạy**: Đổi `Status` thành `Ready to Process` chỉ là xếp hàng chờ; người vận hành chủ động bấm chạy.
-- **Lọc theo trạng thái**: gspread đọc toàn bộ Sheet, chỉ lấy các dòng `Ready to Process`.
-- **Kiểm tra dữ liệu trước khi chạy**: dòng thiếu Hotel ID hoặc có ngày kết thúc trước ngày bắt đầu bị đánh `Failed` ngay, không động đến Colinker.
-- **Tự động hóa trình duyệt**: Playwright dùng phiên đăng nhập Colinker đã lưu, tìm theo Hotel ID, chọn đúng Room Type và đặt trạng thái đóng bán theo khoảng ngày yêu cầu.
-- **Chế độ chạy thử an toàn**: `--dry-run` chỉ đọc và kiểm tra, `--no-save` đi qua mọi bước trên Colinker nhưng không bấm Save.
-- **Ghi kết quả & log lỗi**: Sau mỗi dòng, script ghi `Success` hoặc `Failed` (kèm lý do) ngay trên Sheet, đồng thời chụp ảnh màn hình khi lỗi.
-- **Không cần AI**: Logic đơn giản, dễ xây dựng, dễ debug và bảo trì.
+- **Standardized input**: Requests are entered into Google Sheets with fixed columns (`Hotel ID`, `Room Type`, `Start Date`, `End Date`, `Status`).
+- **Human-in-the-loop trigger**: Setting `Status` to `Ready to Process` only queues the row; the operator decides when to run the bot.
+- **Status-based filtering**: gspread reads the whole Sheet and picks up only rows with `Status = "Ready to Process"`.
+- **Input validation**: Rows with a missing Hotel ID, or an end date before the start date, are marked `Failed` immediately without touching Colinker.
+- **Browser automation**: Playwright reuses a saved Colinker login session, searches by Hotel ID, selects the correct Room Type, and sets the closed status for the requested date range.
+- **Safe test modes**: `--dry-run` only reads and validates; `--no-save` goes through every step on Colinker without clicking Save.
+- **Write-back and error logging**: After each row, the script writes `Success` or `Failed` (with the reason) back to the Sheet and saves a screenshot when a row fails.
+- **No AI required**: Simple, deterministic rules, easy to build, debug, and maintain.
+
+## 🛠️ Tech Stack & Architecture
 
 ## 🛠️ Tech Stack & Architecture
 
