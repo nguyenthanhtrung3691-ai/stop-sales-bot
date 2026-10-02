@@ -13,12 +13,6 @@
 
 ---
 
-<h1 align="center">Stop Sales Semi-Automation Bot 🛑🤖</h1>
-
-<p align="center">
-  <em>A lightweight RPA workflow that turns Google Sheets into a control panel for Colinker allotment &amp; Stop Sale operations.</em>
-</p>
-
 ## 📖 Project Overview
 
 This project implements a **Semi-Automation** workflow to process Stop Sales requests on **Colinker Admin**. The team standardizes request data on **Google Sheets**; when a request needs processing, a **Python** script reads the Sheet with **gspread** and uses **Playwright** to operate the browser and update room status for the hotel. It is a **quick-win** solution: low cost, fast to deploy (2–3 weeks), and usable before the system provides an official API.
