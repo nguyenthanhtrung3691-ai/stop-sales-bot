@@ -1,4 +1,2 @@
-   .env
-   credentials/
-   logs/
-   screenshots/
+!\[Project Architecture](architecture.png)
+

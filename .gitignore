@@ -222,3 +222,6 @@ __marimo__/
 credentials/
 logs/
 screenshots/
+codegen_output.py
+record.py
+read_outlook.py
