@@ -30,8 +30,6 @@ This project implements a **Semi-Automation** workflow to process Stop Sales req
 
 ## 🛠️ Tech Stack & Architecture
 
-## 🛠️ Tech Stack & Architecture
-
 ![Project Architecture](architecture.png)
 
 *Sơ đồ trên là kiến trúc đích (chạy trên AWS EC2). Hiện tại bot chạy trên máy Windows của người vận hành.*
