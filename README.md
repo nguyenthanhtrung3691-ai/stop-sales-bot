@@ -1,32 +1,87 @@
-# Stop Sales Bot
+<h1 align="center">Stop Sales Semi-Automation Bot 🛑🤖</h1>
 
-Semi-automation bot that reads Stop Sale requests from **Google Sheets** and closes the matching room types on **Colinker** using **Playwright** (Python).
+<p align="center">
+  <em>A lightweight RPA workflow that turns Google Sheets into a control panel for Colinker allotment &amp; Stop Sale operations.</em>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/Playwright-Browser%20Automation-2EAD33?logo=playwright&logoColor=white" alt="Playwright">
+  <img src="https://img.shields.io/badge/gspread-Google%20Sheets-0F9D58?logo=googlesheets&logoColor=white" alt="gspread">
+  <img src="https://img.shields.io/badge/Colinker-Channel%20Manager-1F6FEB" alt="Colinker">
+</p>
+
+---
+
+## 📖 Project Overview
+
+Dự án triển khai quy trình **Bán Tự Động (Semi-Automation)** để xử lý yêu cầu Stop Sales trên **Colinker Admin**. Nhân sự chuẩn hóa dữ liệu đầu vào trên **Google Sheets**; khi có yêu cầu cần xử lý, script **Python** dùng **gspread** đọc Sheet và **Playwright** thao tác trình duyệt để cập nhật trạng thái phòng cho khách sạn. Đây là giải pháp **quick-win**: chi phí thấp, triển khai nhanh (2–3 tuần), phù hợp trước khi hệ thống có API chính thức.
+
+## 🔑 Key Features
+
+- **Chuẩn hóa dữ liệu đầu vào**: Nhập yêu cầu vào Google Sheets theo cột cố định (`Hotel ID`, `Room Type`, `Start Date`, `End Date`, `Status`).
+- **Con người kiểm soát thời điểm chạy**: Đổi `Status` thành `Ready to Process` chỉ là xếp hàng chờ; người vận hành chủ động bấm chạy.
+- **Lọc theo trạng thái**: gspread đọc toàn bộ Sheet, chỉ lấy các dòng `Ready to Process`.
+- **Kiểm tra dữ liệu trước khi chạy**: dòng thiếu Hotel ID hoặc có ngày kết thúc trước ngày bắt đầu bị đánh `Failed` ngay, không động đến Colinker.
+- **Tự động hóa trình duyệt**: Playwright dùng phiên đăng nhập Colinker đã lưu, tìm theo Hotel ID, chọn đúng Room Type và đặt trạng thái đóng bán theo khoảng ngày yêu cầu.
+- **Chế độ chạy thử an toàn**: `--dry-run` chỉ đọc và kiểm tra, `--no-save` đi qua mọi bước trên Colinker nhưng không bấm Save.
+- **Ghi kết quả & log lỗi**: Sau mỗi dòng, script ghi `Success` hoặc `Failed` (kèm lý do) ngay trên Sheet, đồng thời chụp ảnh màn hình khi lỗi.
+- **Không cần AI**: Logic đơn giản, dễ xây dựng, dễ debug và bảo trì.
+
+## 🛠️ Tech Stack & Architecture
 
 ![Project Architecture](architecture.png)
 
-## Status
+*Sơ đồ trên là kiến trúc đích (chạy trên AWS EC2). Hiện tại bot chạy trên máy Windows của người vận hành.*
 
-- Working: reading the Sheet, validating rows, writing results back, logging.
-- In testing: the Colinker steps (hotel search, room selection, date range). Always run with `--no-save` first and check the screenshots before saving for real.
+| Layer | Technology |
+|-------|------------|
+| Language | Python 3.10+ (venv) |
+| Data access | gspread + Google Sheets API (Service Account) |
+| Browser automation | Playwright (Chromium) |
+| Login | Saved browser session (`login_once.py`), required because Colinker asks for an OTP |
+| Config & secrets | `.env`, `credentials/` (git-ignored) |
+| Logging | `logs/app.log` + failure screenshots in `screenshots/` |
 
-## How it works
+## 📊 Data Pipeline Flow
 
-1. The team enters a request in Google Sheets (columns below) and sets `Status` to `Ready to Process`.
-2. The operator runs the bot on their machine.
-3. The bot validates each row, opens Colinker with a saved login session, finds the hotel by ID, selects the room type, and sets the date range and the "closed" status.
-4. The bot writes `Success` or `Failed: <reason>` back to the Sheet and saves a screenshot when a row fails.
+1. **Input**: TC receives a Stop Sales request and enters it into Google Sheets with the fixed columns.
+2. **Queue**: TC sets `Status` to `Ready to Process`. This does not trigger the bot.
+3. **Trigger**: The operator runs `python src\main.py`.
+4. **Read & Validate**: `sheets_client.py` keeps only `Ready to Process` rows; `models.py` validates each row (required fields, `dd/mm/yyyy` dates, start date not after end date).
+5. **Execute**: `colinker_bot.py` opens Colinker with the saved session, searches by `Hotel ID`, waits until exactly one hotel is left, opens the Room tab, ticks the room type, opens *Change status*, sets the date range and the "closed" status.
+6. **Write-back**: The bot writes `Success` or `Failed: <reason>` to the `Status` column. On failure a screenshot is saved to `screenshots/` and details go to `logs/app.log`.
+7. **Verify**: In the early rollout, TC spot-checks the result on Colinker, which then syncs the change to the connected OTA channels.
 
-## Sheet format
+## 📁 Project Structure
 
-| Hotel ID | Room Type | Start Date | End Date | Status |
-|----------|-----------|------------|----------|--------|
-| 133574732 | Premium Double Room | 10/12/2026 | 12/12/2026 | Ready to Process |
+```text
+stop-sales-bot/
+├── src/
+│   ├── main.py               # Entry point - orchestrates the whole run
+│   ├── sheets_client.py      # gspread: read "Ready to Process" rows, write back status
+│   ├── colinker_bot.py       # Playwright: find hotel, select room, set dates and status
+│   ├── models.py             # Row parsing and input validation
+│   └── logger.py             # Logging setup (console + file)
+├── login_once.py             # Log in manually (OTP) and save the Colinker session
+├── architecture.png          # Architecture diagram
+├── requirements.txt          # Python dependencies
+├── .env.example              # Template for environment variables
+├── .gitignore                # Excludes .env, credentials/, logs/, screenshots/
+└── README.md
+```
 
-- Dates use `dd/mm/yyyy`.
-- `Room Type` must match the room name on Colinker exactly.
-- `Status`: `Ready to Process` -> `Success` or `Failed: <reason>`.
+Created locally and git-ignored: `credentials/` (Service Account key, Colinker session), `logs/`, `screenshots/`, `.env`.
 
-## Setup (Windows, PowerShell)
+## 🚀 Getting Started
+
+### 1. Prerequisites
+
+- **Python 3.10+** and **git**
+- **Google Cloud project** with *Google Sheets API* and *Google Drive API* enabled, and a **Service Account** whose email has *Editor* access to the Sheet
+- **Colinker account** with permission to edit room status (a dedicated bot account is recommended)
+
+### 2. Installation (Windows, PowerShell)
 
 ```powershell
 git clone https://github.com/nguyenthanhtrung3691-ai/stop-sales-bot.git
@@ -37,11 +92,38 @@ pip install -r requirements.txt
 python -m playwright install chromium
 ```
 
-1. **Google access:** create a Google Cloud project, enable *Google Sheets API* and *Google Drive API*, create a Service Account, download its JSON key as `credentials/service-account.json`, and share the Sheet with the Service Account email (Editor).
-2. **Config:** copy `.env.example` to `.env` and fill in your Sheet ID, worksheet name and Colinker URL.
-3. **Colinker login (OTP):** run `python login_once.py`, log in manually (including the OTP), wait until the Colinker menu appears, then press Enter. The session is saved to `credentials/colinker_state.json`. Repeat when the session expires.
+### 3. Configuration
 
-## Usage
+1. Download the Service Account key as `credentials/service-account.json`.
+2. Copy `.env.example` to `.env` and fill it in:
+
+```env
+GOOGLE_SHEET_ID=your_sheet_id
+GOOGLE_CREDENTIALS_PATH=credentials/service-account.json
+WORKSHEET_NAME=Sheet1
+COLINKER_URL=https://your-colinker-admin-url
+HEADLESS=false
+```
+
+3. Save the Colinker login session (the bot cannot type an OTP by itself):
+
+```powershell
+python login_once.py
+```
+
+Log in manually (including the OTP), wait until the Colinker menu appears, then press Enter. The session is saved to `credentials/colinker_state.json`. Run this again whenever the session expires.
+
+### 4. Sheet format
+
+| Hotel ID | Room Type | Start Date | End Date | Status |
+|----------|-----------|------------|----------|--------|
+| 133574732 | Premium Double Room | 10/12/2026 | 12/12/2026 | Ready to Process |
+
+- Dates use `dd/mm/yyyy`.
+- `Room Type` must match the room name on Colinker exactly.
+- `Status` goes from `Ready to Process` to `Success` or `Failed: <reason>`.
+
+### 5. Run
 
 ```powershell
 python src\main.py --dry-run    # read and validate the Sheet only
@@ -49,30 +131,32 @@ python src\main.py --no-save    # go through Colinker without clicking Save (tes
 python src\main.py              # real run: saves changes on Colinker
 ```
 
-## Project structure
+Always start with `--dry-run`, then `--no-save`, and check the screenshots in `screenshots/` before a real run. Test on a test hotel or on dates far in the future first.
 
-```text
-stop-sales-bot/
-├── src/
-│   ├── main.py              # entry point
-│   ├── sheets_client.py     # read queued rows, write back status
-│   ├── colinker_bot.py      # Playwright steps on Colinker
-│   ├── models.py            # row validation
-│   └── logger.py            # logging
-├── login_once.py            # save the Colinker login session
-├── requirements.txt
-├── .env.example
-└── README.md
-```
+## 🔗 Monitoring & Access
 
-## Security
+| What | Where |
+|------|-------|
+| Request tracker | The Google Sheet (`GOOGLE_SHEET_ID` in `.env`) |
+| Runtime logs | `logs/app.log` |
+| Failure and check screenshots | `screenshots/` |
+| Colinker Admin | `COLINKER_URL` in `.env` (dedicated bot account recommended) |
+
+## 🔒 Security
 
 - Never commit `.env`, `credentials/`, `logs/` or `screenshots/` (already in `.gitignore`).
 - `credentials/colinker_state.json` is a login session: treat it like a password.
-- Use a dedicated bot account on Colinker when possible.
+- Logs and screenshots may contain hotel data; do not share them publicly.
 
-## Known limitations
+## ⚠️ Known Limitations
 
 - The Colinker session expires and must be refreshed manually with `login_once.py`.
 - Playwright selectors may need updating when the Colinker UI changes.
 - Requests are still copied into the Sheet manually.
+- The bot only closes sales (status `N`); reopening sales is done by hand for now.
+
+## 🗺️ Roadmap
+
+- Read requests from Outlook and fill the Sheet automatically (with a review step before `Ready to Process`).
+- Deploy on AWS EC2: headless mode, `playwright install --with-deps chromium`, and ask Colinker about IP allow-listing, since a saved session may not carry over to a new IP.
+- Add a reopen-sales option.
